@@ -14,55 +14,55 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Building application Docker image...'
-                echo "Branch: ${env.BRANCH_NAME}"
                 echo "Build number: ${env.BUILD_NUMBER}"
-                bat 'docker build -t %IMAGE_NAME%:%IMAGE_TAG% .'
+                sh 'docker build -t $IMAGE_NAME:$IMAGE_TAG .'
             }
         }
 
         stage('Test') {
             steps {
-                echo 'Running automated CRUD tests...'
-                bat 'npm install'
-                bat 'npm test'
+                echo 'Installing dependencies and running automated CRUD tests...'
+                sh 'npm install'
+                sh 'npm test'
             }
         }
 
         stage('Code Quality') {
             steps {
                 echo 'Running ESLint code quality analysis...'
-                bat 'npm run lint'
+                sh 'npm run lint'
             }
         }
 
         stage('Security') {
             steps {
                 echo 'Running npm audit security scan...'
-                bat 'npm audit || exit 0'
+                sh 'npm audit || true'
             }
         }
 
         stage('Deploy') {
             steps {
                 echo 'Deploying application to test Docker environment...'
-                bat 'docker rm -f %TEST_CONTAINER% || exit 0'
-                bat 'docker run -d --name %TEST_CONTAINER% -p 3001:3000 -e MONGO_URI=%MONGO_URI% %IMAGE_NAME%:%IMAGE_TAG%'
+                sh 'docker rm -f $TEST_CONTAINER || true'
+                sh 'docker run -d --name $TEST_CONTAINER -p 3001:3000 -e MONGO_URI=$MONGO_URI $IMAGE_NAME:$IMAGE_TAG'
             }
         }
 
         stage('Release') {
             steps {
                 echo 'Promoting application image to release version...'
-                bat 'docker tag %IMAGE_NAME%:%IMAGE_TAG% %IMAGE_NAME%:release-%BUILD_NUMBER%'
-                bat 'docker rm -f %RELEASE_CONTAINER% || exit 0'
-                bat 'docker run -d --name %RELEASE_CONTAINER% -p 3002:3000 -e MONGO_URI=%MONGO_URI% %IMAGE_NAME%:release-%BUILD_NUMBER%'
+                sh 'docker tag $IMAGE_NAME:$IMAGE_TAG $IMAGE_NAME:release-$BUILD_NUMBER'
+                sh 'docker rm -f $RELEASE_CONTAINER || true'
+                sh 'docker run -d --name $RELEASE_CONTAINER -p 3002:3000 -e MONGO_URI=$MONGO_URI $IMAGE_NAME:release-$BUILD_NUMBER'
             }
         }
 
         stage('Monitoring') {
             steps {
-                echo 'Checking application health endpoint...'
-                bat 'curl http://localhost:3002/health'
+                echo 'Checking released application health endpoint...'
+                sh 'sleep 5'
+                sh 'curl http://host.docker.internal:3002/health'
             }
         }
     }
@@ -70,7 +70,7 @@ pipeline {
     post {
         always {
             echo 'Pipeline completed. Cleaning up test deployment container...'
-            bat 'docker rm -f %TEST_CONTAINER% || exit 0'
+            sh 'docker rm -f $TEST_CONTAINER || true'
         }
 
         success {
