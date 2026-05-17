@@ -17,15 +17,25 @@ app.use(cors({ origin: '*' })); // For FCC testing purposes only
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Sample front-end
-app.route('/:project/').get(function (req, res) {
-  res.sendFile(`${process.cwd()}/views/issue.html`);
+/// Health check endpoint for Jenkins monitoring stage
+app.route('/health').get(function (req, res) {
+  res.status(200).json({
+    status: 'UP',
+    service: 'Issue Tracker API',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Index page (static HTML)
 app.route('/').get(function (req, res) {
   res.sendFile(`${process.cwd()}/views/index.html`);
 });
+
+// Sample front-end
+app.route('/:project/').get(function (req, res) {
+  res.sendFile(`${process.cwd()}/views/issue.html`);
+});
+
 
 // For FCC testing purposes
 fccTestingRoutes(app);
