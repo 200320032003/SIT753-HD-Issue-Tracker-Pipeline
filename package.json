@@ -5,7 +5,7 @@
 	"main": "server.js",
 	"scripts": {
 	"start": "node server.js",
-	"test": "mocha tests -u tdd",
+	"test": "mocha tests -u tdd --exit",
 	"lint": "npx eslint server.js routes tests --ext .js || exit 0"
 	},
 	"dependencies": {
